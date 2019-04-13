@@ -54,9 +54,10 @@ OBJS=	mosquitto.o \
 		util_mosq.o \
 		websockets.o \
 		will_mosq.o
+BROKER_CFLAGS += -Ilua-5.3.5/src/
 
 mosquitto : ${OBJS}
-	${CROSS_COMPILE}${CC} $^ -o $@ ${LDFLAGS} $(BROKER_LIBS)
+	${CROSS_COMPILE}${CC} $^ -o $@ ${LDFLAGS} $(BROKER_LIBS) -L lua-5.3.5/src/ -l lua
 
 mosquitto.o : mosquitto.c mosquitto_broker_internal.h
 	${CROSS_COMPILE}${CC} $(BROKER_CFLAGS) -c $< -o $@

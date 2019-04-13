@@ -14,6 +14,24 @@ Contributors:
    Roger Light - initial implementation and documentation.
 */
 
+//lua header 
+#define lua_c
+
+#include "lprefix.h"
+
+
+#include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "lua.h"
+
+#include "lauxlib.h"
+#include "lualib.h"
+//////////////////////////////////////////////////
+
+
 #include "config.h"
 
 #include <assert.h>
@@ -180,6 +198,32 @@ int handle__publish(struct mosquitto_db *db, struct mosquitto *context)
 	}
 
 	log__printf(NULL, MOSQ_LOG_DEBUG, "Received PUBLISH from %s (d%d, q%d, r%d, m%d, '%s', ... (%ld bytes))", context->id, dup, qos, retain, mid, topic, (long)payloadlen);
+	if(strcmp(topic,"lua_test")==0 && payloadlen>0){
+		int status, result;
+        	lua_State *L = luaL_newstate();  /* create state */
+        	if (L == NULL) {
+                	printf("mlua%s","cannot create state: not enough memory");
+                	return 0;
+        	}
+        	luaL_openlibs(L);  /* open standard libraries */
+        	//if (handle_luainit(L) != LUA_OK)  /* run LUA_INIT */
+                //	return 0;  /* error running LUA_INIT */
+
+		luaL_dostring(L,&payload);
+		
+		//print result
+		int n = lua_gettop(L);
+  		if (n > 0) {  /* any result to be printed? */
+    			luaL_checkstack(L, LUA_MINSTACK, "too many results to print");
+    			lua_getglobal(L, "print");
+    			lua_insert(L, 1);
+    			if (lua_pcall(L, n, 0, 0) != LUA_OK)
+      			printf("mlua %s", lua_pushfstring(L, "error calling 'print' (%s)",
+                                             lua_tostring(L, -1)));
+  		}
+		lua_close(L);
+	}
+
 	if(qos > 0){
 		db__message_store_find(context, mid, &stored);
 	}

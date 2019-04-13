@@ -14,6 +14,23 @@ Contributors:
    Roger Light - initial implementation and documentation.
 */
 
+//lua vm header
+#define lua_c
+
+#include "lprefix.h"
+
+
+#include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "lua.h"
+
+#include "lauxlib.h"
+#include "lualib.h"
+//////////////////////////////////////
+
 #include "config.h"
 
 #ifndef WIN32
@@ -194,7 +211,14 @@ void mosquitto__daemonise(void)
 	log__printf(NULL, MOSQ_LOG_WARNING, "Warning: Can't start in daemon mode in Windows.");
 #endif
 }
-
+/*
+** Prints an error message, adding the program name in front of it
+** (if present)
+*/
+static void l_message (const char *pname, const char *msg) {
+  if (pname) lua_writestringerror("%s: ", pname);
+  lua_writestringerror("%s\n", msg);
+}
 
 int main(int argc, char *argv[])
 {
@@ -341,6 +365,7 @@ int main(int argc, char *argv[])
 
 	rc = drop_privileges(&config, false);
 	if(rc != MOSQ_ERR_SUCCESS) return rc;
+
 
 	signal(SIGINT, handle_sigint);
 	signal(SIGTERM, handle_sigint);
